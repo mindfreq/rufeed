@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  
+  <!-- Required feed metadata -->
+  <title>Example Tech Blog</title>
+  <link href="https://example.com/blog/feed/atom" rel="self" />
+  <link href="https://example.com/blog" rel="alternate" />
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+  <updated>2024-03-15T14:30:00Z</updated>
+  
+  <!-- Optional but recommended -->
+  <subtitle>Latest posts about tech, programming, and web development</subtitle>
+  <author>
+    <name>Jane Developer</name>
+    <email>jane@example.com</email>
+    <uri>https://example.com/jane</uri>
+  </author>
+  <rights>© 2024 Example Tech Blog. All rights reserved.</rights>
+  <generator uri="https://example.com/cms" version="1.0">Example CMS</generator>
+  <icon>https://example.com/favicon.ico</icon>
+  <logo>https://example.com/logo.png</logo>
+
+  <!-- Entry 1 -->
+  <entry>
+    <title>Getting Started with Rust</title>
+    <link href="https://example.com/blog/rust-getting-started" />
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2024-03-15T14:30:00Z</updated>
+    <published>2024-03-14T09:00:00Z</published>
+    
+    <author>
+      <name>Jane Developer</name>
+      <email>jane@example.com</email>
+    </author>
+    
+    <category term="rust" scheme="https://example.com/tags" label="Rust Programming" />
+    <category term="tutorial" scheme="https://example.com/tags" />
+    
+    <content type="html">
+      &lt;h1&gt;Getting Started with Rust&lt;/h1&gt;
+      &lt;p&gt;Rust is a systems programming language that runs blazingly fast...&lt;/p&gt;
+      &lt;pre&gt;&lt;code&gt;fn main() {
+    println!("Hello, world!");
+}
+&lt;/code&gt;&lt;/pre&gt;
+    </content>
+    
+    <summary>Learn the basics of Rust programming language in this beginner-friendly tutorial.</summary>
+    <rights>© 2024 Jane Developer</rights>
+  </entry>
+
+  <!-- Entry 2 -->
+  <entry>
+    <title>CSS Grid Layout Mastery</title>
+    <link href="https://example.com/blog/css-grid-mastery" />
+    <link href="https://example.com/blog/css-grid-mastery/pdf" 
+          rel="alternate" 
+          type="application/pdf" 
+          title="PDF Version" />
+    
+    <id>urn:uuid:d8f3e7a2-9b4c-4f8e-9a3c-1e4f7b9d2c5a</id>
+    <updated>2024-03-10T11:15:00Z</updated>
+    <published>2024-03-08T16:20:00Z</published>
+    
+    <author>
+      <name>John Smith</name>
+      <uri>https://example.com/john-smith</uri>
+    </author>
+    
+    <contributor>
+      <name>Maria Garcia</name>
+      <email>maria@example.com</email>
+    </contributor>
+    
+    <content type="xhtml">
+      &lt;div xmlns="http://www.w3.org/1999/xhtml"&gt;
+        &lt;h1&gt;CSS Grid Layout Mastery&lt;/h1&gt;
+        &lt;p&gt;CSS Grid is a powerful layout system...&lt;/p&gt;
+      &lt;/div&gt;
+    </content>
+  </entry>
+
+  <!-- Entry 3 - Minimal example -->
+  <entry>
+    <title>New Version Released: v2.0.0</title>
+    <link href="https://example.com/blog/version-2-release" />
+    <id>tag:example.com,2024-03-01:/blog/version-2-release</id>
+    <updated>2024-03-01T08:00:00Z</updated>
+    <published>2024-03-01T08:00:00Z</published>
+    <author>
+      <name>Release Team</name>
+    </author>
+    <content type="text">
+      Version 2.0.0 is now available! Includes performance improvements and bug fixes.
+    </content>
+  </entry>
+
+</feed>

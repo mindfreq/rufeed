@@ -1,3 +1,16 @@
+use feed_rs::parser::ParseFeedError;
+
+pub mod client;
+pub mod commands;
+pub mod config;
+pub mod parser;
+
+use client::CLIENT;
+
+pub async fn test_thing() -> Result<(), Error> {
+ 
+}
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -11,4 +24,33 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// =================== Error Handle ===================
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error("Failed to parse feed: {0}")]
+    ParseFeed(#[from] ParseFeedError),
+
+    #[error("Missing required field: {0}")]
+    MissingField(String),
+
+    #[error("HTTP request failed: {0}")]
+    HttpRequest(#[from] reqwest::Error),
+
+    #[error("Failed to parse JSON: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+// we must manually implement serde::Serialize
+impl serde::Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
 }
