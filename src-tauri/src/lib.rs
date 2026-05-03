@@ -3,13 +3,13 @@ pub mod commands;
 pub mod config;
 pub mod parser;
 
-use commands::feed::{add_feed, get_entry, get_feeds, get_feed_item};
+use commands::feed::{add_feed, get_entry, get_feeds, get_feed_item, remove_feed};
 
 pub async fn test_thing() -> Result<(), Error> {
-    match get_entry("https://blog.rust-lang.org/", "https://blog.rust-lang.org/2026/03/20/rust-challenges/").await {
-        Ok(feed) => println!("{:?}", feed),
-        Err(e) => eprintln!("add_feed failed: {}", e),
-    }
+    // match get_entry("https://blog.rust-lang.org/", "https://blog.rust-lang.org/2026/03/20/rust-challenges/").await {
+    //     Ok(feed) => println!("{:?}", feed),
+    //     Err(e) => eprintln!("add_feed failed: {}", e),
+    // }
 
     Ok(())
 }
@@ -18,7 +18,13 @@ pub async fn test_thing() -> Result<(), Error> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![add_feed])
+        .invoke_handler(tauri::generate_handler![
+            add_feed,
+            get_feeds,
+            remove_feed,
+            get_feed_item,
+            get_entry
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,14 +1,18 @@
-use feed_rs::model::Person;
 use feed_rs::parser;
 use scraper::{Html, Selector};
 
 use crate::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct FeedItem {
     pub title: String,
     pub published: String,
     pub url: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Person {
+    pub name: String,
 }
 
 impl FeedItem {
@@ -25,7 +29,7 @@ impl FeedItem {
                 published: entry
                     .published
                     .or(entry.updated)
-                    .map(|d| d.to_string())
+                    .map(|d| d.to_rfc3339())
                     .ok_or(Error::MissingField("published".into()))?,
                 url: entry
                     .links
@@ -41,7 +45,7 @@ impl FeedItem {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct FeedEntry {
     pub id: String,
     pub title: String,
@@ -77,18 +81,22 @@ impl FeedEntry {
                     published: entry
                         .published
                         .or(entry.updated)
-                        .map(|d| d.to_string())
+                        .map(|d| d.to_rfc3339())
                         .ok_or(Error::MissingField("published".into()))?,
                     updated: entry
                         .updated
-                        .map(|d| d.to_string())
+                        .map(|d| d.to_rfc3339())
                         .ok_or(Error::MissingField("updated".into()))?,
                     summary: entry.summary.map(|t| t.content),
                     content: entry
                         .content
                         .and_then(|c| c.body)
                         .ok_or(Error::MissingField("content".into()))?,
-                    authors: entry.authors,
+                    authors: entry
+                        .authors
+                        .into_iter()
+                        .map(|author| Person { name: author.name })
+                        .collect(),
                 });
             }
         }
