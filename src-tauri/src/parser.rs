@@ -4,7 +4,6 @@ use scraper::{Html, Selector};
 
 use crate::Error;
 
-
 #[derive(Debug)]
 pub struct FeedItem {
     pub title: String,
@@ -42,9 +41,8 @@ impl FeedItem {
     }
 }
 
-
 #[derive(Debug)]
-pub struct FeedItemDetail {
+pub struct FeedEntry {
     pub id: String,
     pub title: String,
     pub url: String,
@@ -55,7 +53,7 @@ pub struct FeedItemDetail {
     pub authors: Vec<Person>,
 }
 
-impl FeedItemDetail {
+impl FeedEntry {
     pub fn from_feed(xml: &str, target_url: &str) -> Result<Self, Error> {
         let feed = parser::parse(xml.as_bytes())?;
 
@@ -95,26 +93,98 @@ impl FeedItemDetail {
             }
         }
 
-        Err(Error::MissingField(
-            format!("no entry found for url: {}", target_url)
-        ))
+        Err(Error::MissingField(format!(
+            "no entry found for url: {}",
+            target_url
+        )))
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct FeedInfo {
+    pub url: String,
+    pub feed_url: String,
+    pub title: Option<String>,
+    pub favicon: Option<String>,
+}
 
-
-pub fn extract_feed_urls(html: &str) -> Vec<String> {
+pub fn extract_feed_info(html: &str, base_url: &str) -> Vec<FeedInfo> {
     let document = Html::parse_document(html);
-    
-    let selector = Selector::parse(
-        r#"link[rel="alternate"][type="application/rss+xml"],
-           link[rel="alternate"][type="application/atom+xml"],
-           link[rel="alternate"][type="application/feed+json"]"#
-    ).unwrap();
 
-    document
-        .select(&selector)
-        .filter_map(|el| el.value().attr("href"))
-        .map(|href| href.to_string())
-        .collect()
+    let rss_selector =
+        Selector::parse(r#"link[rel="alternate"][type="application/rss+xml"]"#).unwrap();
+    let atom_selector =
+        Selector::parse(r#"link[rel="alternate"][type="application/atom+xml"]"#).unwrap();
+    let json_selector =
+        Selector::parse(r#"link[rel="alternate"][type="application/feed+json"]"#).unwrap();
+
+    let favicon = extract_favicon(&document, base_url);
+
+    let mut feeds: Vec<FeedInfo> = Vec::new();
+
+    for selector in [&rss_selector, &atom_selector, &json_selector] {
+        for el in document.select(selector) {
+            if let Some(href) = el.value().attr("href") {
+                let title = el.value().attr("title").map(String::from);
+
+                feeds.push(FeedInfo {
+                    url: base_url.to_string(),
+                    feed_url: resolve_url(base_url, href),
+                    title,
+                    favicon: favicon.clone(),
+                });
+            }
+        }
+    }
+
+    feeds
+}
+
+fn extract_favicon(document: &Html, base_url: &str) -> Option<String> {
+    // ترتيب الأولوية: Apple Touch Icon -> PNG Icon -> Standard Icon -> favicon.ico
+    let favicon_selectors = [
+        r#"link[rel="apple-touch-icon"]"#,
+        r#"link[rel="apple-touch-icon-precomposed"]"#,
+        r#"link[rel="icon"][type="image/png"]"#,
+        r#"link[rel="icon"][sizes="32x32"]"#,
+        r#"link[rel="icon"][sizes="any"]"#,
+        r#"link[rel="icon"]"#,
+        r#"link[rel="shortcut icon"]"#,
+    ];
+
+    for selector_str in &favicon_selectors {
+        if let Ok(sel) = Selector::parse(selector_str) {
+            if let Some(el) = document.select(&sel).next() {
+                if let Some(href) = el.value().attr("href") {
+                    return Some(resolve_url(base_url, href));
+                }
+            }
+        }
+    }
+
+    Some(format!("{}/favicon.ico", base_url.trim_end_matches('/')))
+}
+
+fn resolve_url(base: &str, href: &str) -> String {
+    if href.starts_with("http://") || href.starts_with("https://") {
+        href.to_string()
+    } else if href.starts_with("//") {
+        format!("https:{}", href)
+    } else if href.starts_with('/') {
+        // رابط مطلق نسبي
+        let base = if base.ends_with('/') {
+            &base[..base.len() - 1]
+        } else {
+            base
+        };
+        format!("{}{}", base, href)
+    } else {
+        // رابط نسبي
+        let base = if base.ends_with('/') {
+            base.to_string()
+        } else {
+            format!("{}/", base)
+        };
+        format!("{}{}", base, href)
+    }
 }

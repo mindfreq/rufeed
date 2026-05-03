@@ -1,27 +1,24 @@
-use feed_rs::parser::ParseFeedError;
-
 pub mod client;
 pub mod commands;
 pub mod config;
 pub mod parser;
 
-use client::CLIENT;
+use commands::feed::{add_feed, get_entry, get_feeds, get_feed_item};
 
 pub async fn test_thing() -> Result<(), Error> {
- 
-}
+    match get_entry("https://blog.rust-lang.org/", "https://blog.rust-lang.org/2026/03/20/rust-challenges/").await {
+        Ok(feed) => println!("{:?}", feed),
+        Err(e) => eprintln!("add_feed failed: {}", e),
+    }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![add_feed])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -33,7 +30,7 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     #[error("Failed to parse feed: {0}")]
-    ParseFeed(#[from] ParseFeedError),
+    ParseFeed(#[from] feed_rs::parser::ParseFeedError),
 
     #[error("Missing required field: {0}")]
     MissingField(String),
