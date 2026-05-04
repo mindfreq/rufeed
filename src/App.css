@@ -179,8 +179,7 @@
     margin-top: 1.2rem;
   }
 
-  .reader-content,
-  .reader-content * {
+  .reader-content {
     -webkit-user-select: text;
     user-select: text;
   }
@@ -199,7 +198,7 @@
   }
 
   .reader-content img {
-    @apply my-4 w-full rounded-lg border;
+    @apply my-4 h-auto w-full rounded-lg border;
   }
 
   .reader-content pre {
