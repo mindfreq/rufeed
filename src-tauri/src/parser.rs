@@ -184,11 +184,8 @@ fn resolve_url(base: &str, href: &str) -> String {
         format!("https:{}", href)
     } else if href.starts_with('/') {
         // رابط مطلق نسبي
-        let base = if base.ends_with('/') {
-            &base[..base.len() - 1]
-        } else {
-            base
-        };
+        let base = base.strip_suffix('/').unwrap_or(base);
+        
         format!("{}{}", base, href)
     } else {
         // رابط نسبي

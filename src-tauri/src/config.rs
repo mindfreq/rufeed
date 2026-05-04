@@ -92,7 +92,7 @@ pub mod feed_config {
                 fs::write(path, "[]")?;
             }
 
-            let data = fs::read_to_string(&path)?;
+            let data = fs::read_to_string(path)?;
             Ok(serde_json::from_str(&data)?)
         }
     }

@@ -9,7 +9,7 @@ use commands::feed::{add_feed, get_entry, get_feed_item, get_feeds, remove_feed}
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            config::init_config_path(&app.handle())?;
+            config::init_config_path(app.handle())?;
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

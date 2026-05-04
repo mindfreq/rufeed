@@ -45,9 +45,9 @@ pub async fn add_feed(url: &str) -> Result<Feed, Error> {
             Feed::add(title, &feed.url, &feed.feed_url, icon)
         }
         None => {
-            return Err(Error::MissingField(
+            Err(Error::MissingField(
                 "No RSS/Atom/JSON feed found at this URL".into(),
-            ));
+            ))
         }
     }
 }
@@ -60,7 +60,7 @@ pub async fn get_feeds() -> Result<Vec<Feed>, Error> {
 
 #[tauri::command]
 pub async fn remove_feed(website_url: &str) -> Result<Feed, Error> {
-    Ok(Feed::remove(website_url)?)
+    Feed::remove(website_url)
 }
 // =======================================================
 
@@ -75,7 +75,7 @@ pub async fn get_feed_item(website_url: String) -> Result<Vec<FeedItem>, Error> 
         .await?;
         FeedItem::from_feed(&xml)
     } else {
-        return Err(Error::MissingField("no feed found in the settings.".into()));
+        Err(Error::MissingField("no feed found in the settings.".into()))
     }
 }
 
@@ -91,6 +91,6 @@ pub async fn get_entry(website_url: String, target_url: String) -> Result<FeedEn
 
         FeedEntry::from_feed(&xml, &target_url)
     } else {
-        return Err(Error::MissingField("no feed found in the settings.".into()));
+        Err(Error::MissingField("no feed found in the settings.".into()))
     }
 }
