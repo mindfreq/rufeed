@@ -3,7 +3,7 @@ pub mod commands;
 pub mod config;
 pub mod parser;
 
-use commands::feed::{add_feed, get_entry, get_feeds, get_feed_item, remove_feed};
+use commands::feed::{add_feed, get_entry, get_feed_item, get_feeds, remove_feed};
 
 pub async fn test_thing() -> Result<(), Error> {
     // match get_entry("https://blog.rust-lang.org/", "https://blog.rust-lang.org/2026/03/20/rust-challenges/").await {
@@ -43,6 +43,12 @@ pub enum Error {
 
     #[error("HTTP request failed: {0}")]
     HttpRequest(#[from] reqwest::Error),
+
+    #[error("The website returned unreadable response data")]
+    InvalidResponseBody,
+
+    #[error("The website returned status {status} for {url}")]
+    HttpStatus { url: String, status: u16 },
 
     #[error("Failed to parse JSON: {0}")]
     Json(#[from] serde_json::Error),

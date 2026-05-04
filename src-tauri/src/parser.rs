@@ -1,3 +1,4 @@
+use feed_rs::model::Person;
 use feed_rs::parser;
 use scraper::{Html, Selector};
 
@@ -8,11 +9,6 @@ pub struct FeedItem {
     pub title: String,
     pub published: String,
     pub url: String,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct Person {
-    pub name: String,
 }
 
 impl FeedItem {
@@ -71,6 +67,13 @@ impl FeedEntry {
                 .unwrap_or_default();
 
             if url == target_url {
+                let summary = entry.summary.map(|t| t.content);
+                let content = entry
+                    .content
+                    .and_then(|c| c.body)
+                    .or_else(|| summary.clone())
+                    .ok_or(Error::MissingField("content".into()))?;
+
                 return Ok(Self {
                     id: entry.id,
                     title: entry
@@ -87,15 +90,16 @@ impl FeedEntry {
                         .updated
                         .map(|d| d.to_rfc3339())
                         .ok_or(Error::MissingField("updated".into()))?,
-                    summary: entry.summary.map(|t| t.content),
-                    content: entry
-                        .content
-                        .and_then(|c| c.body)
-                        .ok_or(Error::MissingField("content".into()))?,
+                    summary,
+                    content,
                     authors: entry
                         .authors
                         .into_iter()
-                        .map(|author| Person { name: author.name })
+                        .map(|author| Person {
+                            name: author.name,
+                            uri: author.uri,
+                            email: author.email,
+                        })
                         .collect(),
                 });
             }

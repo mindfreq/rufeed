@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { commands, Feed, FeedEntry, FeedItem } from "./bindings";
+import { commands, Feed, FeedEntry, FeedItem, Person } from "./bindings";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -69,6 +68,89 @@ const formatPublishedDate = (value?: string, long = false): string => {
   return new Date(timestamp).toLocaleDateString(undefined, long
     ? { year: "numeric", month: "long", day: "numeric" }
     : { year: "numeric", month: "short", day: "numeric" });
+};
+
+const getRenderableHtml = (content: string): string => {
+  const value = content.trim();
+  if (!value) return "";
+
+  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(value);
+  const hasEscapedTags = /&lt;\/?[a-z][\s\S]*&gt;/i.test(value);
+  if (hasHtmlTags || !hasEscapedTags) return value;
+
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  const decoded = textarea.value.trim();
+
+  return /<[a-z][\s\S]*>/i.test(decoded) ? decoded : value;
+};
+
+const isSummarySameAsContent = (summary: string | null, content: string): boolean => {
+  if (!summary) return false;
+
+  const normalizedSummary = summary.replace(/\s+/g, " ").trim();
+  if (!normalizedSummary) return false;
+
+  const htmlContent = getRenderableHtml(content);
+  const normalizedHtml = htmlContent.replace(/\s+/g, " ").trim();
+  if (normalizedSummary === normalizedHtml) return true;
+
+  const textContent = htmlContent
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return normalizedSummary === textContent;
+};
+
+const normalizeAuthorUri = (value: string): string => {
+  const cleanedValue = value.trim();
+  if (!cleanedValue) return "";
+  return /^https?:\/\//i.test(cleanedValue) ? cleanedValue : `https://${cleanedValue}`;
+};
+
+const getAuthorUriLabel = (value: string): string => {
+  const normalized = normalizeAuthorUri(value);
+  if (!normalized) return "Website";
+
+  try {
+    const url = new URL(normalized);
+    return url.hostname.replace(/^www\./i, "") || "Website";
+  } catch {
+    return "Website";
+  }
+};
+
+const renderAuthor = (author: Person, index: number) => {
+  const normalizedUri = author.uri ? normalizeAuthorUri(author.uri) : "";
+
+  return (
+    <div
+      key={`${author.name}-${index}`}
+      className="flex flex-wrap items-center gap-2 rounded-md border border-border/70 bg-muted/40 px-2.5 py-1.5 text-xs"
+    >
+      <span className="font-medium text-foreground" dir="auto">{author.name}</span>
+      {author.email && (
+        <a
+          href={`mailto:${author.email}`}
+          className="text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground"
+        >
+          {author.email}
+        </a>
+      )}
+      {normalizedUri && (
+        <a
+          href={normalizedUri}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-primary underline decoration-dotted underline-offset-4 transition-opacity hover:opacity-80"
+        >
+          {getAuthorUriLabel(normalizedUri)}
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+    </div>
+  );
 };
 
 export default function App() {
@@ -349,7 +431,7 @@ export default function App() {
 
         {/* Main content */}
         <main className="flex-1 flex min-h-0 flex-col overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-border/70 px-4 py-2.5 md:hidden">
+          <div className="flex items-center gap-2 border-b border-border/70 px-4 py-2.5 md:hidden select-none">
             <Button
               variant="ghost"
               size="icon"
@@ -403,7 +485,7 @@ export default function App() {
                       <button
                         key={i}
                         onClick={() => handleSelectItem(view.feed, item)}
-                        className="w-full rounded-lg border border-transparent bg-card/40 px-4 py-3.5 text-left transition-all duration-200 hover:border-border/70 hover:bg-card hover:shadow-sm"
+                        className="w-full select-none rounded-lg border border-transparent bg-card/40 px-4 py-3.5 text-left transition-all duration-200 hover:border-border/70 hover:bg-card hover:shadow-sm"
                       >
                         <p dir="auto" className="mb-1 line-clamp-2 text-sm font-semibold leading-snug tracking-tight">
                           {item.title}
@@ -417,7 +499,7 @@ export default function App() {
             </>
           ) : view.type === "entry" ? (
             <>
-              <div className="flex items-center gap-3 border-b border-border/70 bg-card/40 px-6 py-3.5">
+              <div className="flex items-center gap-3 border-b border-border/70 bg-card/40 px-6 py-3.5 select-none">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -432,28 +514,28 @@ export default function App() {
                 </a>
               </div>
               <ScrollArea className="min-h-0 flex-1">
-                <article className="mx-auto w-full max-w-3xl px-4 py-7 sm:px-6 lg:px-8">
+                <article className="mx-auto w-full max-w-3xl select-text px-4 py-7 sm:px-6 lg:px-8">
                   <h1 dir="auto" className="mb-3 text-2xl font-semibold leading-tight tracking-tight">
                     {view.entry.title}
                   </h1>
-                  <div className="mb-6 flex flex-wrap items-center gap-3">
+                  <div className="mb-6 space-y-2">
                     {view.entry.authors.length > 0 && (
-                      <Badge variant="secondary" className="text-xs font-normal">
-                        {view.entry.authors.map((a) => a.name).join(", ")}
-                      </Badge>
+                      <div className="flex flex-wrap gap-2">
+                        {view.entry.authors.map((author, index) => renderAuthor(author, index))}
+                      </div>
                     )}
                     {view.entry.published && (
                       <span className="text-xs text-muted-foreground">{formatPublishedDate(view.entry.published, true)}</span>
                     )}
                   </div>
-                  {view.entry.summary && (
+                  {view.entry.summary && !isSummarySameAsContent(view.entry.summary, view.entry.content) && (
                     <p className="mb-7 border-l-2 border-border pl-4 text-sm italic leading-6 text-muted-foreground">
                       {view.entry.summary}
                     </p>
                   )}
                   <div
-                    className="prose prose-neutral prose-sm sm:prose-base max-w-none break-words dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-blockquote:border-primary/40 prose-blockquote:text-muted-foreground prose-img:rounded-lg prose-img:border [&_img]:max-w-full [&_pre]:max-w-full"
-                    dangerouslySetInnerHTML={{ __html: view.entry.content }}
+                    className="reader-content prose prose-neutral prose-sm sm:prose-base break-words dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline prose-a:hover:underline prose-blockquote:border-primary/40 prose-blockquote:text-muted-foreground prose-img:rounded-lg prose-img:border [&_img]:max-w-full [&_pre]:max-w-full"
+                    dangerouslySetInnerHTML={{ __html: getRenderableHtml(view.entry.content) }}
                   />
                 </article>
               </ScrollArea>

@@ -16,6 +16,8 @@ export type FeedItem = {
 
 export type Person = {
   name: string;
+  uri?: string;
+  email?: string;
 };
 
 export type FeedEntry = {

@@ -1,6 +1,21 @@
-use crate::Error;
-use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
+use crate::Error;
+
+
+fn get_config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let config_dir = app.path().app_config_dir()
+        .map_err(|e| e.to_string())?;
+    
+    // Create dir if not exist
+    fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    
+    Ok(config_dir.join("config.json"))
+}
+
 
 pub mod feed_config {
     use super::*;

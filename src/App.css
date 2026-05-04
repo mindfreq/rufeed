@@ -3,6 +3,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-VariableFont_opsz,wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: optional;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -169,6 +177,16 @@
 
   .reader-content > * + * {
     margin-top: 1.2rem;
+  }
+
+  .reader-content,
+  .reader-content * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .reader-content ::selection {
+    @apply bg-primary/25 text-foreground;
   }
 
   .reader-content p,
