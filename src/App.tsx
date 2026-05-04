@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { commands, Feed, FeedEntry, FeedItem, Person } from "./bindings";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -31,14 +31,7 @@ import {
 type View =
   | { type: "empty" }
   | { type: "items"; feed: Feed; items: FeedItem[] }
-  | {
-      type: "entry";
-      feed: Feed;
-      items: FeedItem[];
-      entry: FeedEntry;
-      articleHtml: string;
-      summaryMatchesContent: boolean;
-    };
+  | { type: "entry"; feed: Feed; entry: FeedEntry };
 
 type UiError = {
   id: number;
@@ -90,20 +83,6 @@ const getRenderableHtml = (content: string): string => {
   const decoded = textarea.value.trim();
 
   return /<[a-z][\s\S]*>/i.test(decoded) ? decoded : value;
-};
-
-const getArticleHtml = (content: string): string => {
-  const html = getRenderableHtml(content);
-  if (!/<img[\s>]/i.test(html)) return html;
-
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  template.content.querySelectorAll("img").forEach((image) => {
-    if (!image.hasAttribute("loading")) image.setAttribute("loading", "lazy");
-    if (!image.hasAttribute("decoding")) image.setAttribute("decoding", "async");
-  });
-
-  return template.innerHTML;
 };
 
 const isSummarySameAsContent = (summary: string | null, content: string): boolean => {
@@ -176,7 +155,6 @@ const renderAuthor = (author: Person, index: number) => {
 
 export default function App() {
   const { resolvedTheme, setTheme } = useTheme();
-  const articleScrollRef = useRef<HTMLDivElement>(null);
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState(true);
   const [selectedFeed, setSelectedFeed] = useState<Feed | null>(null);
@@ -188,13 +166,6 @@ export default function App() {
   const [uiError, setUiError] = useState<UiError | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
-  const [feedPendingDelete, setFeedPendingDelete] = useState<Feed | null>(null);
-  const [removingFeedId, setRemovingFeedId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (view.type !== "entry") return;
-    articleScrollRef.current?.scrollTo({ top: 0 });
-  }, [view.type === "entry" ? view.entry.url : null]);
 
   const showError = (error: unknown, fallbackMessage: string) => {
     console.error(error);
@@ -252,25 +223,12 @@ export default function App() {
     setLoadingView(true);
     try {
       const entry = await commands.getEntry(feed.url, item.url);
-      const items = view.type === "items" ? view.items : [];
-      setView({
-        type: "entry",
-        feed,
-        items,
-        entry,
-        articleHtml: getArticleHtml(entry.content),
-        summaryMatchesContent: isSummarySameAsContent(entry.summary, entry.content),
-      });
+      setView({ type: "entry", feed, entry });
     } catch (e) {
       showError(e, "Unable to open this article.");
     } finally {
       setLoadingView(false);
     }
-  };
-
-  const handleBackToItems = () => {
-    if (view.type !== "entry") return;
-    setView({ type: "items", feed: view.feed, items: view.items });
   };
 
   const handleAddFeed = async () => {
@@ -288,8 +246,8 @@ export default function App() {
     }
   };
 
-  const handleRemoveFeed = async (feed: Feed) => {
-    setRemovingFeedId(feed.id);
+  const handleRemoveFeed = async (feed: Feed, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await commands.removeFeed(feed.url);
       setFeeds((prev) => prev.filter((f) => f.id !== feed.id));
@@ -297,11 +255,8 @@ export default function App() {
         setSelectedFeed(null);
         setView({ type: "empty" });
       }
-      setFeedPendingDelete(null);
     } catch (e) {
       showError(e, "Unable to remove this feed.");
-    } finally {
-      setRemovingFeedId(null);
     }
   };
 
@@ -331,6 +286,14 @@ export default function App() {
             <TooltipContent>
               {resolvedTheme === "dark" ? "Switch to light" : "Switch to dark"}
             </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={loadFeeds}>
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh feeds</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger>
@@ -399,10 +362,7 @@ export default function App() {
                     <Tooltip>
                       <TooltipTrigger>
                         <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFeedPendingDelete(feed);
-                          }}
+                          onClick={(e) => handleRemoveFeed(feed, e)}
                           className="inline-flex items-center justify-center rounded-md p-1 align-middle opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -544,19 +504,16 @@ export default function App() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0"
-                  onClick={handleBackToItems}
+                  onClick={() => handleSelectFeed(view.feed)}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs text-muted-foreground">{view.feed.title}</p>
-                  <p dir="auto" className="truncate text-sm font-medium leading-5">{view.entry.title}</p>
-                </div>
+                <span className="text-xs text-muted-foreground truncate">{view.feed.title}</span>
                 <a href={view.entry.url} target="_blank" rel="noreferrer" className="ml-auto">
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </a>
               </div>
-              <div ref={articleScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <ScrollArea className="min-h-0 flex-1">
                 <article className="mx-auto w-full max-w-3xl select-text px-4 py-7 sm:px-6 lg:px-8">
                   <h1 dir="auto" className="mb-3 text-2xl font-semibold leading-tight tracking-tight">
                     {view.entry.title}
@@ -571,17 +528,17 @@ export default function App() {
                       <span className="text-xs text-muted-foreground">{formatPublishedDate(view.entry.published, true)}</span>
                     )}
                   </div>
-                  {view.entry.summary && !view.summaryMatchesContent && (
+                  {view.entry.summary && !isSummarySameAsContent(view.entry.summary, view.entry.content) && (
                     <p className="mb-7 border-l-2 border-border pl-4 text-sm italic leading-6 text-muted-foreground">
                       {view.entry.summary}
                     </p>
                   )}
                   <div
                     className="reader-content prose prose-neutral prose-sm sm:prose-base break-words dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline prose-a:hover:underline prose-blockquote:border-primary/40 prose-blockquote:text-muted-foreground prose-img:rounded-lg prose-img:border [&_img]:max-w-full [&_pre]:max-w-full"
-                    dangerouslySetInnerHTML={{ __html: view.articleHtml }}
+                    dangerouslySetInnerHTML={{ __html: getRenderableHtml(view.entry.content) }}
                   />
                 </article>
-              </div>
+              </ScrollArea>
             </>
           ) : null}
         </main>
@@ -604,52 +561,6 @@ export default function App() {
                   onClick={() => setUiError(null)}
                 >
                   <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {feedPendingDelete && (
-          <div className="absolute inset-0 z-[65] flex items-center justify-center bg-background/55 px-4 backdrop-blur-[2px]">
-            <div className="w-full max-w-md rounded-xl border border-border/80 bg-card p-5 shadow-2xl">
-              <div className="mb-3 flex items-start gap-3">
-                <div className="rounded-lg bg-destructive/10 p-2 text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold tracking-tight">Delete this feed?</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    This removes the feed from your sidebar and clears its articles from this app view.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-4 rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5">
-                <p dir="auto" className="truncate text-xs font-medium text-foreground">
-                  {feedPendingDelete.title || feedPendingDelete.url}
-                </p>
-                {feedPendingDelete.title && (
-                  <p dir="auto" className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {feedPendingDelete.url}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setFeedPendingDelete(null)}
-                  disabled={removingFeedId === feedPendingDelete.id}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleRemoveFeed(feedPendingDelete)}
-                  disabled={removingFeedId === feedPendingDelete.id}
-                >
-                  {removingFeedId === feedPendingDelete.id ? "Deleting..." : "Delete feed"}
                 </Button>
               </div>
             </div>
