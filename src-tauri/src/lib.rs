@@ -5,18 +5,13 @@ pub mod parser;
 
 use commands::feed::{add_feed, get_entry, get_feed_item, get_feeds, remove_feed};
 
-pub async fn test_thing() -> Result<(), Error> {
-    // match get_entry("https://blog.rust-lang.org/", "https://blog.rust-lang.org/2026/03/20/rust-challenges/").await {
-    //     Ok(feed) => println!("{:?}", feed),
-    //     Err(e) => eprintln!("add_feed failed: {}", e),
-    // }
-
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            config::init_config_path(&app.handle())?;
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             add_feed,

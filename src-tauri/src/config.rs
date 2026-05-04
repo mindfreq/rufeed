@@ -1,21 +1,32 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
+
 use crate::Error;
 
+static CONFIG_PATH: OnceLock<PathBuf> = OnceLock::new();
 
-fn get_config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let config_dir = app.path().app_config_dir()
-        .map_err(|e| e.to_string())?;
-    
-    // Create dir if not exist
+pub fn init_config_path(app: &tauri::AppHandle) -> Result<(), String> {
+    let config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+
     fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
-    
-    Ok(config_dir.join("config.json"))
+
+    let path = config_dir.join("feeds.json");
+    CONFIG_PATH
+        .set(path)
+        .map_err(|_| "Config path already initialized".to_string())?;
+
+    Ok(())
 }
 
+fn get_feeds_path() -> Result<&'static PathBuf, Error> {
+    CONFIG_PATH
+        .get()
+        .ok_or_else(|| Error::MissingField("Config path not initialized".to_string()))
+}
 
 pub mod feed_config {
     use super::*;
@@ -56,7 +67,7 @@ pub mod feed_config {
             };
             feeds.push(new_feed);
             let json = serde_json::to_string_pretty(&feeds)?;
-            fs::write("feeds.json", json)?;
+            fs::write(get_feeds_path()?, json)?;
 
             Ok(feeds.pop().unwrap())
         }
@@ -70,13 +81,13 @@ pub mod feed_config {
 
             let removed = feeds.remove(index);
             let json = serde_json::to_string_pretty(&feeds)?;
-            fs::write("feeds.json", json)?;
+            fs::write(get_feeds_path()?, json)?;
 
             Ok(removed)
         }
 
         fn get_content() -> Result<Vec<Feed>, Error> {
-            let path = std::path::Path::new("feeds.json");
+            let path = std::path::Path::new(get_feeds_path()?);
             if !path.exists() {
                 fs::write(path, "[]")?;
             }

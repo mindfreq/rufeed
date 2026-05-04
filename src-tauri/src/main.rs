@@ -3,6 +3,5 @@
 
 #[tokio::main]
 async fn main() {
-    // rufeed_lib::test_thing().await;
     rufeed_lib::run()
 }
