@@ -210,3 +210,66 @@
     @apply border-l-2 border-primary pl-4 text-muted-foreground;
   }
 }
+
+/* ── Performance: GPU-accelerated scroll container ── */
+.reader-scroll-area {
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Improved reader typography ── */
+.reader-content {
+  font-size: 1rem;
+  line-height: 1.85;
+  color: hsl(var(--foreground));
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.reader-content h1,
+.reader-content h2,
+.reader-content h3,
+.reader-content h4 {
+  @apply font-semibold tracking-tight text-foreground;
+  margin-top: 1.75em;
+  margin-bottom: 0.6em;
+  line-height: 1.35;
+}
+
+.reader-content h1 { font-size: 1.5rem; }
+.reader-content h2 { font-size: 1.25rem; }
+.reader-content h3 { font-size: 1.1rem; }
+
+.reader-content p {
+  margin-bottom: 1.1em;
+}
+
+.reader-content ul,
+.reader-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.1em;
+}
+
+.reader-content table {
+  @apply w-full border-collapse text-sm;
+  margin-bottom: 1.25em;
+}
+
+.reader-content th,
+.reader-content td {
+  @apply border border-border px-3 py-2 text-left;
+}
+
+.reader-content th {
+  @apply bg-muted font-semibold;
+}
+
+.reader-content code:not(pre > code) {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground;
+}
+
+/* Prevent layout shifts from images */
+.reader-content img {
+  aspect-ratio: attr(width) / attr(height);
+}

@@ -88,6 +88,7 @@ impl FeedEntry {
                         .ok_or(Error::MissingField("published".into()))?,
                     updated: entry
                         .updated
+                        .or(entry.published)
                         .map(|d| d.to_rfc3339())
                         .ok_or(Error::MissingField("updated".into()))?,
                     summary,
