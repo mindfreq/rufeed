@@ -44,6 +44,9 @@ export const commands = {
   addFeed: (url: string): Promise<Feed> =>
     tauriInvoke<Feed>("add_feed", { url }),
 
+  addFeedDirect: (feedUrl: string): Promise<Feed> =>
+    tauriInvoke<Feed>("add_feed_direct", { feedUrl }),
+
   getFeeds: (): Promise<Feed[]> =>
     tauriInvoke<Feed[]>("get_feeds"),
 

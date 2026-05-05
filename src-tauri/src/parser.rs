@@ -179,14 +179,14 @@ fn extract_favicon(document: &Html, base_url: &str) -> Option<String> {
 }
 
 fn resolve_url(base: &str, href: &str) -> String {
-    if href.starts_with("http://") || href.starts_with("https://") {
+    if href.starts_with("http") {
         href.to_string()
     } else if href.starts_with("//") {
         format!("https:{}", href)
     } else if href.starts_with('/') {
         // رابط مطلق نسبي
         let base = base.strip_suffix('/').unwrap_or(base);
-        
+
         format!("{}{}", base, href)
     } else {
         // رابط نسبي

@@ -3,6 +3,22 @@ import { commands, Feed, FeedItem } from "../bindings";
 import { UiError, View } from "../types";
 import { extractErrorMessage, normalizeErrorMessage } from "../utils";
 
+const DIRECT_FEED_PATH_PATTERN = /(feed|rss|atom)(\.[a-z0-9]+)?$/i;
+const DIRECT_FEED_EXTENSION_PATTERN = /\.(rss|xml|atom|rdf|json)$/i;
+
+const isLikelyDirectFeedUrl = (value: string): boolean => {
+  try {
+    const { pathname } = new URL(value);
+    const normalizedPath = pathname.toLowerCase();
+    return (
+      DIRECT_FEED_PATH_PATTERN.test(normalizedPath) ||
+      DIRECT_FEED_EXTENSION_PATTERN.test(normalizedPath)
+    );
+  } catch {
+    return false;
+  }
+};
+
 export function useFeeds() {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState(true);
@@ -76,7 +92,10 @@ export function useFeeds() {
 
   const addFeed = useCallback(
     async (url: string) => {
-      const feed = await commands.addFeed(url.trim());
+      const normalizedUrl = url.trim();
+      const feed = isLikelyDirectFeedUrl(normalizedUrl)
+        ? await commands.addFeedDirect(normalizedUrl)
+        : await commands.addFeed(normalizedUrl);
       setFeeds((prev) => [...prev, feed]);
       return feed;
     },

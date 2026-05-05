@@ -3,7 +3,7 @@ pub mod commands;
 pub mod config;
 pub mod parser;
 
-use commands::feed::{add_feed, get_entry, get_feed_item, get_feeds, remove_feed};
+use commands::feed::{add_feed, add_feed_direct, get_entry, get_feed_item, get_feeds, remove_feed};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,10 +15,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             add_feed,
+            add_feed_direct,
             get_feeds,
             remove_feed,
             get_feed_item,
-            get_entry
+            get_entry,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
