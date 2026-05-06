@@ -21,19 +21,19 @@ impl FeedItem {
                 title: entry
                     .title
                     .map(|t| t.content)
-                    .ok_or(Error::MissingField("title".into()))?,
+                    .unwrap_or("no_title".to_string()),
                 published: entry
                     .published
                     .or(entry.updated)
                     .map(|d| d.to_rfc3339())
-                    .ok_or(Error::MissingField("published".into()))?,
+                    .unwrap_or("no_published".to_string()),
                 url: entry
                     .links
                     .iter()
                     .find(|l| l.rel.as_deref() == Some("alternate"))
                     .or_else(|| entry.links.first())
                     .map(|l| l.href.clone())
-                    .ok_or(Error::MissingField("url".into()))?,
+                    .unwrap_or("no_url".to_string()),
             };
             items.push(item);
         }
@@ -79,18 +79,18 @@ impl FeedEntry {
                     title: entry
                         .title
                         .map(|t| t.content)
-                        .ok_or(Error::MissingField("title".into()))?,
+                        .unwrap_or("no_title".to_string()),
                     url,
                     published: entry
                         .published
                         .or(entry.updated)
                         .map(|d| d.to_rfc3339())
-                        .ok_or(Error::MissingField("published".into()))?,
+                        .unwrap_or("no_published".to_string()),
                     updated: entry
                         .updated
                         .or(entry.published)
                         .map(|d| d.to_rfc3339())
-                        .ok_or(Error::MissingField("updated".into()))?,
+                        .unwrap_or("no_updated".to_string()),
                     summary,
                     content,
                     authors: entry

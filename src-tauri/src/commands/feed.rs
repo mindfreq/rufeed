@@ -1,7 +1,6 @@
 use cached::proc_macro::cached;
 use feed_rs::parser;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING};
-use tauri::utils::config::parse;
 
 use crate::client::CLIENT;
 use crate::config::feed_config::Feed;
@@ -65,11 +64,15 @@ pub async fn add_feed_direct(feed_url: &str) -> Result<Feed, Error> {
     let feed = parser::parse(xml.as_bytes())?;
 
     let title = feed.title.map(|t| t.content).unwrap_or("no title".into());
-    let icon = feed.icon.map(|i| i.uri).unwrap_or("defult.png".into());
     let url = url::Url::parse(feed_url)
         .unwrap()
         .origin()
         .ascii_serialization();
+
+    let icon = feed
+        .icon
+        .map(|i| i.uri)
+        .unwrap_or(format!("{url}/favicon.ico"));
     Feed::add(&title, &url, feed_url, &icon)
 }
 

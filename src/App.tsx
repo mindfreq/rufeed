@@ -59,8 +59,7 @@ export default function App() {
   );
 
   const handleRemoveFeed = useCallback(
-    async (feed: Feed, e: React.MouseEvent) => {
-      e.stopPropagation();
+    async (feed: Feed) => {
       try {
         await removeFeed(feed);
       } catch (err) {

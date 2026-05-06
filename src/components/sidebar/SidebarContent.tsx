@@ -19,7 +19,7 @@ interface SidebarContentProps {
   loading: boolean;
   selectedFeedId?: string;
   onSelectFeed: (feed: Feed) => void;
-  onRemoveFeed: (feed: Feed, e: React.MouseEvent) => void;
+  onRemoveFeed: (feed: Feed) => void;
   onAddFeed: (url: string) => Promise<void>;
   onRefresh: () => void;
   onHideSidebar?: () => void;
